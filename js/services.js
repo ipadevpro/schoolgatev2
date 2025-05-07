@@ -4,7 +4,7 @@
  */
 
 // Base API URL - change this to your Google Apps Script web app URL
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzDKStsdn6NcxGJdfdTScCClYnlB3iIoCVbMfU34x90Enrez6KjTgE8nSP653dGvt98uQ/exec';
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzLpE9St8QIWtIJKQTpGUqWHO3p_8m-jTRVRiTniz5KhMXcEZ3YOOF7z_g2L3RpwOPZVQ/exec';
 
 // Authentication utilities
 const AuthService = {
@@ -32,6 +32,23 @@ const AuthService = {
     },
     
     /**
+     * Get user credentials for API calls
+     * This is a helper method to ensure all API calls use the same credentials
+     */
+    getCredentials() {
+        const user = this.getCurrentUser();
+        // Store password in sessionStorage temporarily during login
+        const password = sessionStorage.getItem('temp_password');
+        
+        return {
+            username: user.username,
+            role: user.role,
+            id: user.id,
+            password: password
+        };
+    },
+    
+    /**
      * Log in user
      */
     async login(username, password, role) {
@@ -49,7 +66,10 @@ const AuthService = {
         const data = await response.json();
         
         if (data.status === 'success') {
+            // Store user data
             sessionStorage.setItem('user', JSON.stringify(data.data));
+            // Store password temporarily for API calls (not secure for production!)
+            sessionStorage.setItem('temp_password', password);
         }
         
         return data;
@@ -60,7 +80,8 @@ const AuthService = {
      */
     logout() {
         sessionStorage.removeItem('user');
-        window.location.href = 'login.html';
+        sessionStorage.removeItem('temp_password');
+        window.location.href = 'index.html';
     }
 };
 
@@ -71,6 +92,7 @@ const TeacherService = {
      */
     async getStudentStats() {
         const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -78,8 +100,8 @@ const TeacherService = {
         
         const params = new URLSearchParams();
         params.append('action', 'getStudentStats');
-        params.append('username', user.username);
-        params.append('password', 'token-would-be-better');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
         params.append('role', 'teacher');
         
         const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
@@ -96,7 +118,7 @@ const TeacherService = {
      * Get all students
      */
     async getStudents() {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -104,8 +126,8 @@ const TeacherService = {
         
         const params = new URLSearchParams();
         params.append('action', 'getStudents');
-        params.append('username', user.username);
-        params.append('password', 'token-would-be-better');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
         params.append('role', 'teacher');
         
         const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
@@ -122,7 +144,7 @@ const TeacherService = {
      * Add a new student
      */
     async addStudent(studentData) {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -130,8 +152,8 @@ const TeacherService = {
         
         const formData = new URLSearchParams();
         formData.append('action', 'addStudent');
-        formData.append('username', user.username);
-        formData.append('password', 'token-would-be-better');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
         formData.append('role', 'teacher');
         
         // Add student data
@@ -157,7 +179,7 @@ const TeacherService = {
      * Update a student
      */
     async updateStudent(studentId, studentData) {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -165,8 +187,8 @@ const TeacherService = {
         
         const formData = new URLSearchParams();
         formData.append('action', 'updateStudent');
-        formData.append('username', user.username);
-        formData.append('password', 'token-would-be-better');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
         formData.append('role', 'teacher');
         formData.append('studentId', studentId);
         
@@ -193,7 +215,7 @@ const TeacherService = {
      * Delete a student
      */
     async deleteStudent(studentId) {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -201,8 +223,8 @@ const TeacherService = {
         
         const formData = new URLSearchParams();
         formData.append('action', 'deleteStudent');
-        formData.append('username', user.username);
-        formData.append('password', 'token-would-be-better');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
         formData.append('role', 'teacher');
         formData.append('studentId', studentId);
         
@@ -224,7 +246,7 @@ const TeacherService = {
      * Get all permissions
      */
     async getPermissions() {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -232,8 +254,8 @@ const TeacherService = {
         
         const params = new URLSearchParams();
         params.append('action', 'getPermissions');
-        params.append('username', user.username);
-        params.append('password', 'token-would-be-better');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
         params.append('role', 'teacher');
         
         const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
@@ -250,7 +272,7 @@ const TeacherService = {
      * Approve a permission request
      */
     async approvePermission(permissionId) {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -258,11 +280,11 @@ const TeacherService = {
         
         const formData = new URLSearchParams();
         formData.append('action', 'approvePermission');
-        formData.append('username', user.username);
-        formData.append('password', 'token-would-be-better');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
         formData.append('role', 'teacher');
         formData.append('permissionId', permissionId);
-        formData.append('teacherId', user.id);
+        formData.append('teacherId', credentials.id);
         
         const response = await fetch(API_BASE_URL, {
             method: 'POST',
@@ -282,7 +304,7 @@ const TeacherService = {
      * Reject a permission request
      */
     async rejectPermission(permissionId, notes = '') {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -290,11 +312,11 @@ const TeacherService = {
         
         const formData = new URLSearchParams();
         formData.append('action', 'rejectPermission');
-        formData.append('username', user.username);
-        formData.append('password', 'token-would-be-better');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
         formData.append('role', 'teacher');
         formData.append('permissionId', permissionId);
-        formData.append('teacherId', user.id);
+        formData.append('teacherId', credentials.id);
         formData.append('notes', notes);
         
         const response = await fetch(API_BASE_URL, {
@@ -315,7 +337,7 @@ const TeacherService = {
      * Get violation types
      */
     async getViolationTypes() {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -323,8 +345,8 @@ const TeacherService = {
         
         const params = new URLSearchParams();
         params.append('action', 'getViolationTypes');
-        params.append('username', user.username);
-        params.append('password', 'token-would-be-better');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
         params.append('role', 'teacher');
         
         const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
@@ -341,7 +363,7 @@ const TeacherService = {
      * Add discipline points to a student
      */
     async addDisciplinePoint(disciplineData) {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -349,10 +371,10 @@ const TeacherService = {
         
         const formData = new URLSearchParams();
         formData.append('action', 'addDisciplinePoint');
-        formData.append('username', user.username);
-        formData.append('password', 'token-would-be-better');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
         formData.append('role', 'teacher');
-        formData.append('teacherId', user.id);
+        formData.append('teacherId', credentials.id);
         
         // Add discipline data
         Object.keys(disciplineData).forEach(key => {
@@ -374,10 +396,10 @@ const TeacherService = {
     },
     
     /**
-     * Get all discipline points
+     * Get discipline points for all students or a specific student
      */
     async getDisciplinePoints(studentId = null) {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('teacher')) {
             throw new Error('Unauthorized access');
@@ -385,8 +407,8 @@ const TeacherService = {
         
         const params = new URLSearchParams();
         params.append('action', 'getDisciplinePoints');
-        params.append('username', user.username);
-        params.append('password', 'token-would-be-better');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
         params.append('role', 'teacher');
         
         if (studentId) {
@@ -410,7 +432,7 @@ const StudentService = {
      * Get student profile
      */
     async getStudentProfile() {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('student')) {
             throw new Error('Unauthorized access');
@@ -418,10 +440,10 @@ const StudentService = {
         
         const params = new URLSearchParams();
         params.append('action', 'getStudentProfile');
-        params.append('username', user.username);
-        params.append('password', 'token-would-be-better');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
         params.append('role', 'student');
-        params.append('studentId', user.id);
+        params.append('studentId', credentials.id);
         
         const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
         const data = await response.json();
@@ -434,10 +456,10 @@ const StudentService = {
     },
     
     /**
-     * Get student's permissions
+     * Get student permissions
      */
     async getStudentPermissions() {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('student')) {
             throw new Error('Unauthorized access');
@@ -445,10 +467,10 @@ const StudentService = {
         
         const params = new URLSearchParams();
         params.append('action', 'getStudentPermissions');
-        params.append('username', user.username);
-        params.append('password', 'token-would-be-better');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
         params.append('role', 'student');
-        params.append('studentId', user.id);
+        params.append('studentId', credentials.id);
         
         const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
         const data = await response.json();
@@ -461,10 +483,10 @@ const StudentService = {
     },
     
     /**
-     * Request a new permission
+     * Request permission
      */
     async requestPermission(permissionData) {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('student')) {
             throw new Error('Unauthorized access');
@@ -472,10 +494,10 @@ const StudentService = {
         
         const formData = new URLSearchParams();
         formData.append('action', 'requestPermission');
-        formData.append('username', user.username);
-        formData.append('password', 'token-would-be-better');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
         formData.append('role', 'student');
-        formData.append('studentId', user.id);
+        formData.append('studentId', credentials.id);
         
         // Add permission data
         Object.keys(permissionData).forEach(key => {
@@ -497,10 +519,10 @@ const StudentService = {
     },
     
     /**
-     * Get student's attendance
+     * Get student attendance
      */
     async getStudentAttendance() {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('student')) {
             throw new Error('Unauthorized access');
@@ -508,10 +530,10 @@ const StudentService = {
         
         const params = new URLSearchParams();
         params.append('action', 'getStudentAttendance');
-        params.append('username', user.username);
-        params.append('password', 'token-would-be-better');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
         params.append('role', 'student');
-        params.append('studentId', user.id);
+        params.append('studentId', credentials.id);
         
         const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
         const data = await response.json();
@@ -524,10 +546,10 @@ const StudentService = {
     },
     
     /**
-     * Get student's discipline records
+     * Get student discipline records
      */
     async getStudentDiscipline() {
-        const user = AuthService.getCurrentUser();
+        const credentials = AuthService.getCredentials();
         
         if (!AuthService.hasRole('student')) {
             throw new Error('Unauthorized access');
@@ -535,10 +557,10 @@ const StudentService = {
         
         const params = new URLSearchParams();
         params.append('action', 'getStudentDiscipline');
-        params.append('username', user.username);
-        params.append('password', 'token-would-be-better');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
         params.append('role', 'student');
-        params.append('studentId', user.id);
+        params.append('studentId', credentials.id);
         
         const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
         const data = await response.json();
@@ -554,76 +576,70 @@ const StudentService = {
 // Utility functions
 const Utils = {
     /**
-     * Format date to Indonesian format
+     * Format date to locale string
      */
     formatDate(date) {
         if (!date) return '';
         
-        const d = new Date(date);
-        return d.toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        });
+        const options = { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        };
+        
+        return new Date(date).toLocaleDateString('id-ID', options);
     },
     
     /**
-     * Get initials from a name
+     * Get initials from name
      */
     getInitials(name) {
-        if (!name) return 'XX';
-        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        return name
+            .split(' ')
+            .map(part => part.charAt(0))
+            .join('')
+            .toUpperCase();
     },
     
     /**
-     * Show a toast notification
+     * Show toast notification
      */
     showToast(message, type = 'success', duration = 3000) {
-        // Create toast element if it doesn't exist
-        let toast = document.getElementById('toast-notification');
-        
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'toast-notification';
-            toast.className = 'fixed bottom-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 translate-y-full';
-            document.body.appendChild(toast);
+        // Remove existing toast
+        const existingToast = document.querySelector('.toast');
+        if (existingToast) {
+            existingToast.remove();
         }
         
-        // Set toast content and style
-        if (type === 'success') {
-            toast.className = 'fixed bottom-4 right-4 p-4 rounded-lg shadow-lg bg-green-500 text-white transform transition-transform duration-300';
-            toast.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-        } else if (type === 'error') {
-            toast.className = 'fixed bottom-4 right-4 p-4 rounded-lg shadow-lg bg-red-500 text-white transform transition-transform duration-300';
-            toast.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-        } else {
-            toast.className = 'fixed bottom-4 right-4 p-4 rounded-lg shadow-lg bg-blue-500 text-white transform transition-transform duration-300';
-            toast.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-        }
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast fixed bottom-4 right-4 px-4 py-3 rounded-lg z-50 ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white shadow-lg`;
+        toast.style.transition = 'all 0.3s ease-in-out';
+        toast.style.transform = 'translateY(20px)';
+        toast.style.opacity = '0';
         
-        // Show the toast
+        // Add message
+        toast.textContent = message;
+        
+        // Add to body
+        document.body.appendChild(toast);
+        
+        // Animate in
         setTimeout(() => {
-            toast.classList.remove('translate-y-full');
+            toast.style.transform = 'translateY(0)';
+            toast.style.opacity = '1';
         }, 10);
         
-        // Hide the toast after duration
+        // Auto remove
         setTimeout(() => {
-            toast.classList.add('translate-y-full');
+            toast.style.transform = 'translateY(20px)';
+            toast.style.opacity = '0';
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
         }, duration);
     }
 }; 

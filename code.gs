@@ -233,11 +233,14 @@ function authenticate(username, password, role) {
   try {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     let sheet;
+    let statusIndex;
     
     if (role === "teacher") {
       sheet = spreadsheet.getSheetByName(SHEET_NAMES.TEACHERS);
+      statusIndex = 8; // Status is at index 8 for teachers
     } else if (role === "student") {
       sheet = spreadsheet.getSheetByName(SHEET_NAMES.STUDENTS);
+      statusIndex = 9; // Status is at index 9 for students
     } else {
       return false;
     }
@@ -246,7 +249,14 @@ function authenticate(username, password, role) {
     
     // Skip header row
     for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === username && data[i][2] === password && data[i][8] === "Active") {
+      // More lenient check for status - allow any non-empty value that contains "active" (case insensitive)
+      const statusValue = data[i][statusIndex] ? String(data[i][statusIndex]).trim() : "";
+      const isActive = statusValue.toLowerCase() === "active" || 
+                        statusValue === "1" || 
+                        statusValue.toLowerCase() === "yes" ||
+                        statusValue.toLowerCase() === "ya";
+      
+      if (data[i][1] === username && data[i][2] === password && isActive) {
         return true;
       }
     }
@@ -266,6 +276,9 @@ function handleLogin(e) {
   const password = e.parameter.password;
   const role = e.parameter.role;
   
+  // Add debug logging
+  Logger.log("Login attempt - Username: " + username + ", Role: " + role);
+  
   if (!username || !password || !role) {
     return createResponse("error", "Missing login credentials", null);
   }
@@ -273,11 +286,46 @@ function handleLogin(e) {
   try {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     let sheet;
+    let statusIndex;
     
     if (role === "teacher") {
       sheet = spreadsheet.getSheetByName(SHEET_NAMES.TEACHERS);
+      statusIndex = 8; // Status is at index 8 for teachers
     } else if (role === "student") {
       sheet = spreadsheet.getSheetByName(SHEET_NAMES.STUDENTS);
+      statusIndex = 9; // Status is at index 9 for students
+      
+      // Add detailed logging for student sheet
+      const data = sheet.getDataRange().getValues();
+      Logger.log("Student sheet found with " + data.length + " rows (including header)");
+      if (data.length > 1) {
+        // Log column names to verify structure
+        Logger.log("Columns: " + JSON.stringify(data[0]));
+        
+        // Log first student record (skip password for security)
+        const firstStudent = [...data[1]];
+        firstStudent[2] = "HIDDEN"; // Hide password
+        Logger.log("First student: " + JSON.stringify(firstStudent));
+        Logger.log("Status value at index " + statusIndex + ": " + firstStudent[statusIndex]);
+        
+        // Try to find the student
+        let found = false;
+        for (let i = 1; i < data.length; i++) {
+          if (data[i][1] === username) {
+            Logger.log("Found username match at row " + (i+1));
+            Logger.log("Password match: " + (data[i][2] === password));
+            Logger.log("Status value: '" + data[i][statusIndex] + "'");
+            Logger.log("Status match: " + (data[i][statusIndex] === "Active"));
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          Logger.log("Username not found in student records");
+        }
+      } else {
+        Logger.log("No student records found in sheet");
+      }
     } else {
       return createResponse("error", "Invalid role", null);
     }
@@ -286,7 +334,14 @@ function handleLogin(e) {
     
     // Skip header row
     for (let i = 1; i < data.length; i++) {
-      if (data[i][1] === username && data[i][2] === password && data[i][8] === "Active") {
+      // More lenient check for status - allow any non-empty value that contains "active" (case insensitive)
+      const statusValue = data[i][statusIndex] ? String(data[i][statusIndex]).trim() : "";
+      const isActive = statusValue.toLowerCase() === "active" || 
+                        statusValue === "1" || 
+                        statusValue.toLowerCase() === "yes" ||
+                        statusValue.toLowerCase() === "ya";
+      
+      if (data[i][1] === username && data[i][2] === password && isActive) {
         // Return user data excluding password
         const user = {
           id: data[i][0],
@@ -299,12 +354,22 @@ function handleLogin(e) {
             : { class: data[i][4], grade: data[i][5] })
         };
         
+        Logger.log("Login successful for " + role + ": " + username);
         return createResponse("success", "Login successful", user);
+      } else if (data[i][1] === username) {
+        // Debug if we found the username but login failed
+        Logger.log("Found username but login failed:");
+        Logger.log("- Username match: true");
+        Logger.log("- Password match: " + (data[i][2] === password));
+        Logger.log("- Status value: '" + statusValue + "'");
+        Logger.log("- Is active: " + isActive);
       }
     }
     
+    Logger.log("Invalid credentials for " + role + ": " + username);
     return createResponse("error", "Invalid credentials", null);
   } catch (error) {
+    Logger.log("Login error: " + error.toString());
     return createResponse("error", "Login failed: " + error, null);
   }
 }
@@ -983,4 +1048,159 @@ function getStudentDiscipline(e) {
   } catch (error) {
     return createResponse("error", "Failed to retrieve discipline records: " + error, null);
   }
+}
+
+/**
+ * Test function to diagnose student login issues
+ * Run this function directly from the Google Apps Script editor
+ */
+function testStudentData() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName(SHEET_NAMES.STUDENTS);
+  
+  if (!sheet) {
+    Logger.log("ERROR: Students sheet not found!");
+    return;
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  Logger.log("Students sheet found with " + data.length + " rows (including header)");
+  
+  if (data.length <= 1) {
+    Logger.log("No student records found in sheet");
+    return;
+  }
+  
+  // Log column headers
+  Logger.log("Column headers: " + JSON.stringify(data[0]));
+  
+  // Check all student records
+  for (let i = 1; i < data.length; i++) {
+    const student = [...data[i]];
+    student[2] = "HIDDEN"; // Hide password for security
+    
+    Logger.log("Student #" + i + ": " + JSON.stringify(student));
+    Logger.log("Username: '" + data[i][1] + "'");
+    Logger.log("Status value at index 9: '" + data[i][9] + "'");
+    Logger.log("Is Status 'Active'?: " + (data[i][9] === "Active"));
+    
+    // Check for extra spaces
+    if (data[i][9] && data[i][9].toString().trim() !== data[i][9].toString()) {
+      Logger.log("WARNING: Status value has extra spaces!");
+    }
+  }
+  
+  Logger.log("TEST COMPLETED - Check logs for results");
+}
+
+/**
+ * Test function to try a student login directly
+ * Run this function directly from the Google Apps Script editor
+ */
+function testStudentLogin(testUsername, testPassword) {
+  // Default test credentials if none provided
+  const username = testUsername || "student1";
+  const password = testPassword || "pass123";
+  
+  Logger.log(`Attempting to log in student: ${username}`);
+  
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName(SHEET_NAMES.STUDENTS);
+  
+  if (!sheet) {
+    Logger.log("ERROR: Students sheet not found!");
+    return;
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) {
+    Logger.log("No student records found in sheet");
+    return;
+  }
+  
+  // Check if the username exists
+  let foundIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1] === username) {
+      foundIndex = i;
+      break;
+    }
+  }
+  
+  if (foundIndex === -1) {
+    Logger.log(`Username "${username}" not found in student records`);
+    return;
+  }
+  
+  // Check each criteria for login
+  const row = data[foundIndex];
+  Logger.log(`Found student record at row ${foundIndex + 1}`);
+  Logger.log(`Full record: ${JSON.stringify(row)}`);
+  
+  // Check password
+  const passwordMatch = row[2] === password;
+  Logger.log(`Password match: ${passwordMatch}`);
+  
+  // Check status
+  const statusIndex = 9;
+  const statusValue = row[statusIndex] ? String(row[statusIndex]).trim() : "";
+  Logger.log(`Status value: "${statusValue}"`);
+  
+  // Try different status checks
+  Logger.log(`Status === "Active": ${statusValue === "Active"}`);
+  Logger.log(`Status.toLowerCase() === "active": ${statusValue.toLowerCase() === "active"}`);
+  Logger.log(`Status code points: ${[...statusValue].map(c => c.charCodeAt(0))}`);
+  
+  // Try our lenient status check
+  const isActive = statusValue.toLowerCase() === "active" || 
+                    statusValue === "1" || 
+                    statusValue.toLowerCase() === "yes" ||
+                    statusValue.toLowerCase() === "ya";
+  Logger.log(`Is active (lenient check): ${isActive}`);
+  
+  // Final result
+  const loginSuccess = row[1] === username && row[2] === password && isActive;
+  Logger.log(`Login would be ${loginSuccess ? "SUCCESSFUL" : "FAILED"}`);
+  
+  return loginSuccess;
+}
+
+/**
+ * Utility function to add a test student account
+ * Run this function directly from the Google Apps Script editor
+ */
+function addTestStudent() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName(SHEET_NAMES.STUDENTS);
+  
+  if (!sheet) {
+    Logger.log("ERROR: Students sheet not found!");
+    return false;
+  }
+  
+  // Generate a timestamp-based ID
+  const studentId = "S" + new Date().getTime().toString().slice(-8);
+  
+  // Create a simple test student
+  const testStudent = [
+    studentId,       // StudentID
+    "teststudent",   // Username
+    "test123",       // Password
+    "Test Student",  // FullName
+    "Test Class",    // Class
+    "10",            // Grade
+    "Test Parent",   // ParentName
+    "081234567890",  // ParentContact
+    "test@test.com", // Email
+    "Active"         // Status - using exactly "Active"
+  ];
+  
+  // Add to spreadsheet
+  sheet.appendRow(testStudent);
+  
+  Logger.log("Test student created successfully!");
+  Logger.log("Username: teststudent");
+  Logger.log("Password: test123");
+  
+  return true;
 } 

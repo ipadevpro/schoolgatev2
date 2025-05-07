@@ -313,6 +313,7 @@
         </div>
     </div>
 
+    <script src="js/services.js"></script>
     <script>
         // DOM Elements
         const sidebar = document.getElementById('sidebar');
@@ -354,7 +355,7 @@
         function logout(e) {
             e.preventDefault();
             sessionStorage.removeItem('user');
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
         }
         
         // Helper function to get initials from name
@@ -368,7 +369,7 @@
             const user = JSON.parse(sessionStorage.getItem('user') || '{}');
             
             if (!user.id || user.role !== 'student') {
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
                 return;
             }
             
@@ -388,56 +389,24 @@
         
         // Fetch student profile from API
         function fetchStudentProfile(user) {
-            const apiUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec';
-            
-            // Get student profile
-            const profileParams = new URLSearchParams();
-            profileParams.append('action', 'getStudentProfile');
-            profileParams.append('username', user.username);
-            profileParams.append('password', 'token-would-be-better'); // In real app, use tokens instead
-            profileParams.append('role', 'student');
-            profileParams.append('studentId', user.id);
-            
-            fetch(`${apiUrl}?${profileParams.toString()}`)
-                .then(response => response.json())
+            // Use StudentService from services.js
+            StudentService.getStudentProfile()
                 .then(data => {
-                    if (data.status === 'success') {
-                        updateStudentProfile(data.data);
-                    }
+                    updateStudentProfile(data);
                 })
                 .catch(error => console.error('Error fetching profile:', error));
             
             // Get student permissions
-            const permissionsParams = new URLSearchParams();
-            permissionsParams.append('action', 'getStudentPermissions');
-            permissionsParams.append('username', user.username);
-            permissionsParams.append('password', 'token-would-be-better');
-            permissionsParams.append('role', 'student');
-            permissionsParams.append('studentId', user.id);
-            
-            fetch(`${apiUrl}?${permissionsParams.toString()}`)
-                .then(response => response.json())
+            StudentService.getStudentPermissions()
                 .then(data => {
-                    if (data.status === 'success') {
-                        updatePermissionsUI(data.data);
-                    }
+                    updatePermissionsUI(data);
                 })
                 .catch(error => console.error('Error fetching permissions:', error));
             
             // Get discipline records
-            const disciplineParams = new URLSearchParams();
-            disciplineParams.append('action', 'getStudentDiscipline');
-            disciplineParams.append('username', user.username);
-            disciplineParams.append('password', 'token-would-be-better');
-            disciplineParams.append('role', 'student');
-            disciplineParams.append('studentId', user.id);
-            
-            fetch(`${apiUrl}?${disciplineParams.toString()}`)
-                .then(response => response.json())
+            StudentService.getStudentDiscipline()
                 .then(data => {
-                    if (data.status === 'success') {
-                        updateDisciplineUI(data.data);
-                    }
+                    updateDisciplineUI(data);
                 })
                 .catch(error => console.error('Error fetching discipline records:', error));
         }
@@ -614,33 +583,21 @@
             submitBtn.disabled = true;
             spinner.classList.remove('hidden');
             
-            // Create form data
-            const formData = new URLSearchParams();
-            formData.append('action', 'requestPermission');
-            formData.append('username', user.username);
-            formData.append('password', 'token-would-be-better');
-            formData.append('role', 'student');
-            formData.append('studentId', user.id);
-            formData.append('leaveDate', leaveDate);
-            formData.append('leaveTime', leaveTime);
-            formData.append('returnTime', returnTime);
-            formData.append('reason', reason);
-            formData.append('notes', notes);
+            const permissionData = {
+                leaveDate: leaveDate,
+                leaveTime: leaveTime,
+                returnTime: returnTime,
+                reason: reason,
+                notes: notes
+            };
             
-            // Send request
-            const apiUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec';
-            
-            fetch(apiUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Hide loading state
-                submitBtn.disabled = false;
-                spinner.classList.add('hidden');
-                
-                if (data.status === 'success') {
+            // Use StudentService from services.js
+            StudentService.requestPermission(permissionData)
+                .then(data => {
+                    // Hide loading state
+                    submitBtn.disabled = false;
+                    spinner.classList.add('hidden');
+                    
                     alert('Permintaan izin berhasil diajukan.');
                     
                     // Reset form
@@ -652,18 +609,15 @@
                     
                     // Refresh data
                     fetchStudentProfile(user);
-                } else {
-                    alert('Gagal mengajukan izin: ' + data.message);
-                }
-            })
-            .catch(error => {
-                // Hide loading state
-                submitBtn.disabled = false;
-                spinner.classList.add('hidden');
-                
-                console.error('Error submitting permission:', error);
-                alert('Terjadi kesalahan. Silakan coba lagi.');
-            });
+                })
+                .catch(error => {
+                    // Hide loading state
+                    submitBtn.disabled = false;
+                    spinner.classList.add('hidden');
+                    
+                    console.error('Error submitting permission:', error);
+                    alert('Terjadi kesalahan. Silakan coba lagi.');
+                });
         }
     </script>
 </body>

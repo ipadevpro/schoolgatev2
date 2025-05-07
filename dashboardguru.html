@@ -301,6 +301,7 @@
         </div>
     </div>
 
+    <script src="js/services.js"></script>
     <script>
         // DOM Elements
         const sidebar = document.getElementById('sidebar');
@@ -350,7 +351,7 @@
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             sessionStorage.removeItem('user');
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
         });
         
         // Check if user is logged in
@@ -358,7 +359,7 @@
             const user = JSON.parse(sessionStorage.getItem('user') || '{}');
             
             if (!user.id || user.role !== 'teacher') {
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
                 return;
             }
             
@@ -374,37 +375,17 @@
         
         // Fetch dashboard data from API
         function fetchDashboardData(user) {
-            const apiUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec';
-            
-            // Get student stats
-            const statsParams = new URLSearchParams();
-            statsParams.append('action', 'getStudentStats');
-            statsParams.append('username', user.username);
-            statsParams.append('password', 'token-would-be-better'); // In real app, use tokens instead
-            statsParams.append('role', 'teacher');
-            
-            fetch(`${apiUrl}?${statsParams.toString()}`)
-                .then(response => response.json())
+            // Use TeacherService from services.js to get stats
+            TeacherService.getStudentStats()
                 .then(data => {
-                    if (data.status === 'success') {
-                        updateDashboardStats(data.data);
-                    }
+                    updateDashboardStats(data);
                 })
                 .catch(error => console.error('Error fetching stats:', error));
             
-            // Get recent permissions
-            const permissionsParams = new URLSearchParams();
-            permissionsParams.append('action', 'getPermissions');
-            permissionsParams.append('username', user.username);
-            permissionsParams.append('password', 'token-would-be-better');
-            permissionsParams.append('role', 'teacher');
-            
-            fetch(`${apiUrl}?${permissionsParams.toString()}`)
-                .then(response => response.json())
+            // Use TeacherService to get permissions
+            TeacherService.getPermissions()
                 .then(data => {
-                    if (data.status === 'success') {
-                        populatePermissionsTable(data.data);
-                    }
+                    populatePermissionsTable(data);
                 })
                 .catch(error => console.error('Error fetching permissions:', error));
         }
@@ -510,67 +491,35 @@
         // Approve permission
         function approvePermission(permissionId) {
             const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-            const apiUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec';
             
-            const formData = new URLSearchParams();
-            formData.append('action', 'approvePermission');
-            formData.append('username', user.username);
-            formData.append('password', 'token-would-be-better');
-            formData.append('role', 'teacher');
-            formData.append('permissionId', permissionId);
-            formData.append('teacherId', user.id);
-            
-            fetch(apiUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
+            // Use TeacherService from services.js
+            TeacherService.approvePermission(permissionId)
+                .then(data => {
                     // Refresh the data
                     fetchDashboardData(user);
                     alert('Permintaan izin berhasil disetujui');
-                } else {
-                    alert('Terjadi kesalahan: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error approving permission:', error);
-                alert('Terjadi kesalahan, silakan coba lagi.');
-            });
+                })
+                .catch(error => {
+                    console.error('Error approving permission:', error);
+                    alert('Terjadi kesalahan, silakan coba lagi.');
+                });
         }
         
         // Reject permission
         function rejectPermission(permissionId) {
             const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-            const apiUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec';
             
-            const formData = new URLSearchParams();
-            formData.append('action', 'rejectPermission');
-            formData.append('username', user.username);
-            formData.append('password', 'token-would-be-better');
-            formData.append('role', 'teacher');
-            formData.append('permissionId', permissionId);
-            formData.append('teacherId', user.id);
-            
-            fetch(apiUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
+            // Use TeacherService from services.js
+            TeacherService.rejectPermission(permissionId)
+                .then(data => {
                     // Refresh the data
                     fetchDashboardData(user);
                     alert('Permintaan izin berhasil ditolak');
-                } else {
-                    alert('Terjadi kesalahan: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error rejecting permission:', error);
-                alert('Terjadi kesalahan, silakan coba lagi.');
-            });
+                })
+                .catch(error => {
+                    console.error('Error rejecting permission:', error);
+                    alert('Terjadi kesalahan, silakan coba lagi.');
+                });
         }
         
         // Initialize charts
