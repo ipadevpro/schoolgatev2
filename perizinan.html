@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolGate - Manajemen Perizinan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Sidebar active state */
+        .sidebar-item.active {
+            background-color: #EBF5FF;
+            color: #1E40AF;
+            border-left: 3px solid #1E40AF;
+        }
+        
+        /* Mobile sidebar */
+        @media (max-width: 768px) {
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            #sidebar.open {
+                transform: translateX(0);
+            }
+            
+            #overlay {
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease, visibility 0.3s ease;
+            }
+            
+            #overlay.open {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Black overlay for mobile sidebar -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white shadow-md z-30 md:translate-x-0 transition-transform">
+        <!-- Logo -->
+        <div class="flex items-center p-4 border-b border-gray-200">
+            <div class="bg-blue-600 text-white p-2 rounded-lg">
+                <i class="fas fa-school text-xl"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800 ml-3">SchoolGate</h1>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="p-4">
+            <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-3">Menu</h2>
+            <ul>
+                <li class="mb-1">
+                    <a href="dashboardguru.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-tachometer-alt w-5 text-center mr-2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="perizinan.html" class="sidebar-item active flex items-center py-2 px-3 rounded-lg transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-sign-out-alt w-5 text-center mr-2"></i>
+                        <span>Perizinan</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="poin-pelanggaran.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-exclamation-circle w-5 text-center mr-2"></i>
+                        <span>Poin Pelanggaran</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-user-graduate w-5 text-center mr-2"></i>
+                        <span>Siswa</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mt-6 mb-3">Pengaturan</h2>
+            <ul>
+                <li class="mb-1">
+                    <a href="profile.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-user-circle w-5 text-center mr-2"></i>
+                        <span>Profil</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="#" id="logoutBtn" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-sign-out-alt w-5 text-center mr-2"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="md:ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center sticky top-0 z-10">
+            <div class="flex items-center">
+                <button id="menuToggle" class="mr-4 text-gray-600 md:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-xl font-semibold text-gray-800">Manajemen Perizinan</h1>
+            </div>
+            
+            <div class="flex items-center">
+                <div class="relative mr-4">
+                    <button id="notificationBtn" class="text-gray-600 hover:text-gray-800 relative">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
+                    </button>
+                    <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg py-1 z-20">
+                        <div class="px-4 py-2 border-b border-gray-100">
+                            <h3 class="font-medium text-gray-800">Notifikasi</h3>
+                        </div>
+                        <div class="max-h-60 overflow-y-auto">
+                            <a href="#" class="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100">
+                                <div class="flex items-start">
+                                    <div class="bg-blue-100 text-blue-600 p-2 rounded-full mr-3">
+                                        <i class="fas fa-user-check text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-800">Permintaan izin baru dari Andi Saputra</p>
+                                        <p class="text-xs text-gray-500 mt-1">2 menit yang lalu</p>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="block px-4 py-3 hover:bg-gray-50">
+                                <div class="flex items-start">
+                                    <div class="bg-green-100 text-green-600 p-2 rounded-full mr-3">
+                                        <i class="fas fa-check-circle text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-800">Budi Santoso telah kembali dari izin</p>
+                                        <p class="text-xs text-gray-500 mt-1">1 jam yang lalu</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="px-4 py-2 border-t border-gray-100 text-center">
+                            <a href="#" class="text-sm text-blue-600 font-medium">Lihat semua notifikasi</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <button id="profileBtn" class="flex items-center space-x-2">
+                        <div id="user-avatar" class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                            <!-- User initials will be inserted here by JS -->
+                        </div>
+                        <span id="user-name" class="hidden md:block text-sm text-gray-700">Admin</span>
+                        <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                    </button>
+                    <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
+                        <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pengaturan</a>
+                        <div class="border-t border-gray-100"></div>
+                        <a href="#" id="logoutLink" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="p-6">
+            <!-- Filters and Search -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="flex-grow max-w-md">
+                        <div class="relative">
+                            <input type="text" id="search-input" placeholder="Cari siswa..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <select id="filter-status" class="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Semua Status</option>
+                            <option value="pending">Menunggu</option>
+                            <option value="approved">Disetujui</option>
+                            <option value="rejected">Ditolak</option>
+                        </select>
+                        <select id="filter-date" class="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Semua Tanggal</option>
+                            <option value="today">Hari Ini</option>
+                            <option value="week">Minggu Ini</option>
+                            <option value="month">Bulan Ini</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permissions Table -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Siswa
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Tanggal
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Waktu
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Jenis
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Alasan
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Aksi
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="permissions-table">
+                            <!-- Table content will be inserted here by JS -->
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                    <div class="flex justify-center items-center">
+                                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Memuat data...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden py-8 text-center">
+                    <div class="text-gray-400 mb-2">
+                        <i class="fas fa-clipboard-list text-4xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-600">Tidak ada data perizinan</h3>
+                    <p class="text-gray-500 text-sm">Belum ada permintaan perizinan dari siswa</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div id="reject-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Tolak Perizinan</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="reject-form">
+                <input type="hidden" id="permission-id">
+                <div class="mb-4">
+                    <label for="reject-notes" class="block text-gray-700 mb-2">Catatan (Opsional)</label>
+                    <textarea id="reject-notes" rows="4" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Berikan alasan penolakan..."></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="cancel-reject" class="px-4 py-2 text-gray-600 mr-2">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Tolak Perizinan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Permission Detail Modal -->
+    <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg max-w-lg w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Detail Perizinan</h3>
+                <button id="close-detail-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4" id="permission-detail">
+                <!-- Detail content will be inserted here by JS -->
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button type="button" id="close-detail-btn" class="px-4 py-2 text-gray-600">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/services.js"></script>
+    <script>
+        // DOM Elements
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const notificationBtn = document.getElementById('notificationBtn');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const profileBtn = document.getElementById('profileBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const logoutLink = document.getElementById('logoutLink');
+    
+        // Toggle sidebar on mobile
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        });
+        
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        });
+        
+        // Toggle dropdowns
+        notificationBtn.addEventListener('click', () => {
+            notificationDropdown.classList.toggle('hidden');
+            profileDropdown.classList.add('hidden');
+        });
+        
+        profileBtn.addEventListener('click', () => {
+            profileDropdown.classList.toggle('hidden');
+            notificationDropdown.classList.add('hidden');
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                notificationDropdown.classList.add('hidden');
+            }
+            
+            if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.add('hidden');
+            }
+        });
+        
+        // Logout functionality
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            AuthService.logout();
+        });
+        
+        logoutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            AuthService.logout();
+        });
+    
+        // Check authentication
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Verify user is logged in and is a teacher
+                if (!AuthService.isLoggedIn() || !AuthService.hasRole('teacher')) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Display user information
+                const user = AuthService.getCurrentUser();
+                document.getElementById('user-name').textContent = user.name || user.username || 'Pengguna';
+                document.getElementById('user-avatar').textContent = user.name ? Utils.getInitials(user.name) : (user.username ? user.username.charAt(0).toUpperCase() : 'U');
+
+                // Load permissions data
+                await loadPermissions();
+
+                // Set up additional event listeners
+                document.getElementById('search-input').addEventListener('input', filterPermissions);
+                document.getElementById('filter-status').addEventListener('change', filterPermissions);
+                document.getElementById('filter-date').addEventListener('change', filterPermissions);
+
+                document.getElementById('close-modal').addEventListener('click', () => {
+                    document.getElementById('reject-modal').classList.add('hidden');
+                });
+                document.getElementById('cancel-reject').addEventListener('click', () => {
+                    document.getElementById('reject-modal').classList.add('hidden');
+                });
+                document.getElementById('reject-form').addEventListener('submit', handleRejectPermission);
+
+                document.getElementById('close-detail-modal').addEventListener('click', () => {
+                    document.getElementById('detail-modal').classList.add('hidden');
+                });
+                document.getElementById('close-detail-btn').addEventListener('click', () => {
+                    document.getElementById('detail-modal').classList.add('hidden');
+                });
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                Utils.showToast('Terjadi kesalahan saat memuat halaman', 'error');
+            }
+        });
+
+        // Global variable to store permissions data
+        let permissionsData = [];
+
+        // Load permissions from API
+        async function loadPermissions() {
+            try {
+                const permissions = await TeacherService.getPermissions();
+                permissionsData = permissions;
+                renderPermissions(permissions);
+            } catch (error) {
+                console.error('Error loading permissions:', error);
+                Utils.showToast('Gagal memuat data perizinan', 'error');
+                renderPermissions([]);
+            }
+        }
+
+        // Render permissions table
+        function renderPermissions(permissions) {
+            const tableBody = document.getElementById('permissions-table');
+            const emptyState = document.getElementById('empty-state');
+
+            if (permissions.length === 0) {
+                tableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                tableBody.innerHTML = permissions.map(permission => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                                    ${getInitials(permission.studentName)}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">${permission.studentName}</div>
+                                    <div class="text-sm text-gray-500">${permission.className}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${Utils.formatDate(permission.date)}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${permission.startTime} - ${permission.endTime || 'Selesai'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${permission.type}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900 truncate max-w-xs" title="${permission.reason}">${permission.reason}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${getStatusBadge(permission.status)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewPermissionDetail('${permission.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${permission.status === 'pending' ? `
+                                <button class="text-green-600 hover:text-green-900 mr-3" onclick="approvePermission('${permission.id}')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="text-red-600 hover:text-red-900" onclick="showRejectModal('${permission.id}')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Add event listeners for action buttons
+                permissions.forEach(permission => {
+                    if (permission.status === 'pending') {
+                        const approveBtn = document.querySelector(`button[onclick="approvePermission('${permission.id}')"]`);
+                        if (approveBtn) {
+                            approveBtn.onclick = () => approvePermission(permission.id);
+                        }
+
+                        const rejectBtn = document.querySelector(`button[onclick="showRejectModal('${permission.id}')"]`);
+                        if (rejectBtn) {
+                            rejectBtn.onclick = () => showRejectModal(permission.id);
+                        }
+                    }
+
+                    const viewBtn = document.querySelector(`button[onclick="viewPermissionDetail('${permission.id}')"]`);
+                    if (viewBtn) {
+                        viewBtn.onclick = () => viewPermissionDetail(permission.id);
+                    }
+                });
+            }
+        }
+
+        // Helper function to get initials from name
+        function getInitials(name) {
+            if (!name) return 'XX';
+            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        }
+
+        // Get status badge HTML
+        function getStatusBadge(status) {
+            let colorClass = '';
+            let text = '';
+            
+            switch (status) {
+                case 'pending':
+                    colorClass = 'bg-yellow-100 text-yellow-800';
+                    text = 'Menunggu';
+                    break;
+                case 'approved':
+                    colorClass = 'bg-green-100 text-green-800';
+                    text = 'Disetujui';
+                    break;
+                case 'rejected':
+                    colorClass = 'bg-red-100 text-red-800';
+                    text = 'Ditolak';
+                    break;
+                default:
+                    colorClass = 'bg-gray-100 text-gray-800';
+                    text = status;
+            }
+            
+            return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}">${text}</span>`;
+        }
+
+        // Filter permissions based on search input and filters
+        function filterPermissions() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const dateFilter = document.getElementById('filter-date').value;
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+            const filtered = permissionsData.filter(permission => {
+                // Search filter
+                const matchesSearch = 
+                    permission.studentName.toLowerCase().includes(searchTerm) || 
+                    permission.reason.toLowerCase().includes(searchTerm);
+                
+                // Status filter
+                const matchesStatus = 
+                    statusFilter === 'all' || 
+                    permission.status === statusFilter;
+                
+                // Date filter
+                let matchesDate = true;
+                if (dateFilter !== 'all') {
+                    const permissionDate = new Date(permission.date);
+                    permissionDate.setHours(0, 0, 0, 0);
+                    
+                    if (dateFilter === 'today') {
+                        matchesDate = permissionDate.getTime() === today.getTime();
+                    } else if (dateFilter === 'week') {
+                        matchesDate = permissionDate >= weekStart;
+                    } else if (dateFilter === 'month') {
+                        matchesDate = permissionDate >= monthStart;
+                    }
+                }
+                
+                return matchesSearch && matchesStatus && matchesDate;
+            });
+            
+            renderPermissions(filtered);
+        }
+
+        // View permission details
+        function viewPermissionDetail(permissionId) {
+            const permission = permissionsData.find(p => p.id === permissionId);
+            if (!permission) return;
+            
+            const detailEl = document.getElementById('permission-detail');
+            detailEl.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Siswa</p>
+                        <p class="font-medium">${permission.studentName}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Kelas</p>
+                        <p class="font-medium">${permission.className}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Tanggal</p>
+                        <p class="font-medium">${Utils.formatDate(permission.date)}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Waktu</p>
+                        <p class="font-medium">${permission.startTime} - ${permission.endTime || 'Selesai'}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Jenis Perizinan</p>
+                        <p class="font-medium">${permission.type}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Status</p>
+                        <p class="font-medium">${getStatusBadge(permission.status)}</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <p class="text-sm text-gray-500">Alasan</p>
+                        <p class="font-medium">${permission.reason}</p>
+                    </div>
+                    ${permission.notes ? `
+                    <div class="md:col-span-2">
+                        <p class="text-sm text-gray-500">Catatan</p>
+                        <p class="font-medium">${permission.notes}</p>
+                    </div>
+                    ` : ''}
+                    ${permission.approvedBy ? `
+                    <div>
+                        <p class="text-sm text-gray-500">Disetujui oleh</p>
+                        <p class="font-medium">${permission.approvedBy}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Tanggal persetujuan</p>
+                        <p class="font-medium">${Utils.formatDate(permission.approvedDate)}</p>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            document.getElementById('detail-modal').classList.remove('hidden');
+        }
+
+        // Show reject modal
+        function showRejectModal(permissionId) {
+            document.getElementById('permission-id').value = permissionId;
+            document.getElementById('reject-notes').value = '';
+            document.getElementById('reject-modal').classList.remove('hidden');
+        }
+
+        // Approve permission
+        async function approvePermission(permissionId) {
+            try {
+                await TeacherService.approvePermission(permissionId);
+                Utils.showToast('Perizinan berhasil disetujui', 'success');
+                await loadPermissions();
+            } catch (error) {
+                console.error('Error approving permission:', error);
+                Utils.showToast('Gagal menyetujui perizinan', 'error');
+            }
+        }
+
+        // Handle reject permission form submit
+        async function handleRejectPermission(e) {
+            e.preventDefault();
+            
+            const permissionId = document.getElementById('permission-id').value;
+            const notes = document.getElementById('reject-notes').value;
+            
+            try {
+                await TeacherService.rejectPermission(permissionId, notes);
+                document.getElementById('reject-modal').classList.add('hidden');
+                Utils.showToast('Perizinan berhasil ditolak', 'success');
+                await loadPermissions();
+            } catch (error) {
+                console.error('Error rejecting permission:', error);
+                Utils.showToast('Gagal menolak perizinan', 'error');
+            }
+        }
+    </script>
+</body>
+</html> 
