@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolGate - Dashboard Siswa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Sidebar active state */
+        .sidebar-item.active {
+            background-color: #EBF5FF;
+            color: #1E40AF;
+            border-left: 3px solid #1E40AF;
+        }
+        
+        /* Mobile sidebar */
+        @media (max-width: 768px) {
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            #sidebar.open {
+                transform: translateX(0);
+            }
+            
+            #overlay {
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease, visibility 0.3s ease;
+            }
+            
+            #overlay.open {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Black overlay for mobile sidebar -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white shadow-md z-30 md:translate-x-0 transition-transform">
+        <!-- Logo -->
+        <div class="flex items-center p-4 border-b border-gray-200">
+            <div class="bg-blue-600 text-white p-2 rounded-lg">
+                <i class="fas fa-school text-xl"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800 ml-3">SchoolGate</h1>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="p-4">
+            <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-3">Menu</h2>
+            <ul>
+                <li class="mb-1">
+                    <a href="dashboard-siswa.html" class="sidebar-item active flex items-center py-2 px-3 rounded-lg transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-tachometer-alt w-5 text-center mr-2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="izin-siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-sign-out-alt w-5 text-center mr-2"></i>
+                        <span>Pengajuan Izin</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="poin-siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-exclamation-circle w-5 text-center mr-2"></i>
+                        <span>Poin Pelanggaran</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mt-6 mb-3">Pengaturan</h2>
+            <ul>
+                <li class="mb-1">
+                    <a href="profile-siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-user-circle w-5 text-center mr-2"></i>
+                        <span>Profil</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="#" id="logoutBtn" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-sign-out-alt w-5 text-center mr-2"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="md:ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center sticky top-0 z-10">
+            <div class="flex items-center">
+                <button id="menuToggle" class="mr-4 text-gray-600 md:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-xl font-semibold text-gray-800">Dashboard Siswa</h1>
+            </div>
+            
+            <div class="flex items-center">
+                <div class="relative">
+                    <button id="profileBtn" class="flex items-center space-x-2">
+                        <div class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium" id="userInitials">
+                            S
+                        </div>
+                        <span class="hidden md:block text-sm text-gray-700" id="userNameDisplay">Siswa</span>
+                        <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                    </button>
+                    <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
+                        <a href="profile-siswa.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
+                        <div class="border-t border-gray-100"></div>
+                        <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 logout-trigger">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="p-6">
+            <!-- Welcome Message -->
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" id="welcomeMessage">Selamat Datang, Siswa!</h2>
+                <p class="text-gray-600">Berikut adalah ringkasan informasi kamu.</p>
+            </div>
+
+            <!-- Student Info Card -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <div class="h-16 w-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-medium" id="studentCardInitials">
+                        S
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-xl font-semibold text-gray-800" id="studentName">-</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                            <div>
+                                <p class="text-sm text-gray-500">Kelas</p>
+                                <p class="text-sm font-medium text-gray-800" id="studentClass">-</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">NIS</p>
+                                <p class="text-sm font-medium text-gray-800" id="studentId">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center justify-center bg-blue-50 p-4 rounded-lg">
+                        <span class="text-sm text-gray-500">Status Kehadiran</span>
+                        <span class="text-lg font-bold text-blue-600" id="attendanceStatus">Hadir</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Keterlambatan</p>
+                            <p class="mt-1 text-2xl font-bold text-gray-800" id="totalLate">-</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Poin Pelanggaran</p>
+                            <p class="mt-1 text-2xl font-bold text-gray-800" id="disciplinePoints">-</p>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <i class="fas fa-exclamation-circle text-red-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Izin Disetujui</p>
+                            <p class="mt-1 text-2xl font-bold text-gray-800" id="approvedPermissions">-</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Recent Discipline Points -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-800">Pelanggaran Terbaru</h3>
+                        <a href="poin-siswa.html" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Lihat semua</a>
+                    </div>
+                    
+                    <div id="recentDiscipline" class="space-y-4">
+                        <div class="flex items-center p-4 border rounded-lg animate-pulse">
+                            <div class="w-10 h-10 mr-3 bg-gray-200 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-4 border rounded-lg animate-pulse">
+                            <div class="w-10 h-10 mr-3 bg-gray-200 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Permissions -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-800">Riwayat Izin</h3>
+                        <a href="izin-siswa.html" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Lihat semua</a>
+                    </div>
+                    
+                    <div id="recentPermissions" class="space-y-4">
+                        <div class="flex items-center p-4 border rounded-lg animate-pulse">
+                            <div class="w-10 h-10 mr-3 bg-gray-200 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-4 border rounded-lg animate-pulse">
+                            <div class="w-10 h-10 mr-3 bg-gray-200 rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Action Card -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Ajukan Izin Baru</h3>
+                
+                <form id="permissionForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="leaveDate" class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                            <input type="date" id="leaveDate" class="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="leaveTime" class="block text-sm font-medium text-gray-700 mb-1">Jam Keluar</label>
+                                <input type="time" id="leaveTime" class="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="returnTime" class="block text-sm font-medium text-gray-700 mb-1">Jam Kembali</label>
+                                <input type="time" id="returnTime" class="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="reason" class="block text-sm font-medium text-gray-700 mb-1">Alasan</label>
+                        <select id="reason" class="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                            <option value="">Pilih alasan</option>
+                            <option value="Sakit">Sakit</option>
+                            <option value="Keperluan Keluarga">Keperluan Keluarga</option>
+                            <option value="Urusan Pribadi">Urusan Pribadi</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
+                        <textarea id="notes" rows="2" class="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Tambahkan keterangan detail jika diperlukan"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end">
+                        <button type="submit" id="submitPermission" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center">
+                            <span>Ajukan Izin</span>
+                            <div id="loadingSpinner" class="hidden ml-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const profileBtn = document.getElementById('profileBtn');
+        const profileDropdown = document.getElementById('profileDropdown');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const logoutTriggers = document.querySelectorAll('.logout-trigger');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        
+        // Toggle sidebar on mobile
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        });
+        
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        });
+        
+        // Toggle profile dropdown
+        profileBtn.addEventListener('click', () => {
+            profileDropdown.classList.toggle('hidden');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.add('hidden');
+            }
+        });
+        
+        // Logout functionality
+        logoutBtn.addEventListener('click', logout);
+        logoutTriggers.forEach(trigger => trigger.addEventListener('click', logout));
+        
+        function logout(e) {
+            e.preventDefault();
+            sessionStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+        
+        // Helper function to get initials from name
+        function getInitials(name) {
+            if (!name) return 'S';
+            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        }
+        
+        // Check if user is logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+            
+            if (!user.id || user.role !== 'student') {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Update UI with user info
+            welcomeMessage.textContent = `Selamat Datang, ${user.fullName || 'Siswa'}!`;
+            document.getElementById('userNameDisplay').textContent = user.fullName || 'Siswa';
+            document.getElementById('userInitials').textContent = getInitials(user.fullName);
+            document.getElementById('studentCardInitials').textContent = getInitials(user.fullName);
+            
+            // Fetch student profile data
+            fetchStudentProfile(user);
+            
+            // Set up permission form submission
+            const permissionForm = document.getElementById('permissionForm');
+            permissionForm.addEventListener('submit', submitPermission);
+        });
+        
+        // Fetch student profile from API
+        function fetchStudentProfile(user) {
+            const apiUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec';
+            
+            // Get student profile
+            const profileParams = new URLSearchParams();
+            profileParams.append('action', 'getStudentProfile');
+            profileParams.append('username', user.username);
+            profileParams.append('password', 'token-would-be-better'); // In real app, use tokens instead
+            profileParams.append('role', 'student');
+            profileParams.append('studentId', user.id);
+            
+            fetch(`${apiUrl}?${profileParams.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateStudentProfile(data.data);
+                    }
+                })
+                .catch(error => console.error('Error fetching profile:', error));
+            
+            // Get student permissions
+            const permissionsParams = new URLSearchParams();
+            permissionsParams.append('action', 'getStudentPermissions');
+            permissionsParams.append('username', user.username);
+            permissionsParams.append('password', 'token-would-be-better');
+            permissionsParams.append('role', 'student');
+            permissionsParams.append('studentId', user.id);
+            
+            fetch(`${apiUrl}?${permissionsParams.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updatePermissionsUI(data.data);
+                    }
+                })
+                .catch(error => console.error('Error fetching permissions:', error));
+            
+            // Get discipline records
+            const disciplineParams = new URLSearchParams();
+            disciplineParams.append('action', 'getStudentDiscipline');
+            disciplineParams.append('username', user.username);
+            disciplineParams.append('password', 'token-would-be-better');
+            disciplineParams.append('role', 'student');
+            disciplineParams.append('studentId', user.id);
+            
+            fetch(`${apiUrl}?${disciplineParams.toString()}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateDisciplineUI(data.data);
+                    }
+                })
+                .catch(error => console.error('Error fetching discipline records:', error));
+        }
+        
+        // Update student profile UI
+        function updateStudentProfile(profileData) {
+            const student = profileData.student;
+            
+            // Update basic info
+            document.getElementById('studentName').textContent = student.FullName || '-';
+            document.getElementById('studentClass').textContent = `${student.Grade} - ${student.Class}` || '-';
+            document.getElementById('studentId').textContent = student.StudentID || '-';
+            
+            // Update attendance stats
+            document.getElementById('totalLate').textContent = profileData.attendance.lateCount || 0;
+            
+            // Update discipline stats
+            document.getElementById('disciplinePoints').textContent = profileData.discipline.totalPoints || 0;
+            
+            // Update progress bar if present
+            const progressBar = document.getElementById('pointsProgress');
+            if (progressBar) {
+                const percent = profileData.discipline.percentToMax || 0;
+                progressBar.style.width = `${percent}%`;
+                
+                // Change color based on percentage
+                if (percent > 75) {
+                    progressBar.classList.add('bg-red-500');
+                } else if (percent > 50) {
+                    progressBar.classList.add('bg-yellow-500');
+                } else {
+                    progressBar.classList.add('bg-green-500');
+                }
+            }
+        }
+        
+        // Update permissions UI
+        function updatePermissionsUI(permissions) {
+            const approvedCount = permissions.filter(p => p.Status === 'Approved').length;
+            document.getElementById('approvedPermissions').textContent = approvedCount;
+            
+            const recentContainer = document.getElementById('recentPermissions');
+            recentContainer.innerHTML = ''; // Clear placeholder/loading state
+            
+            if (permissions.length === 0) {
+                recentContainer.innerHTML = `
+                    <div class="text-center py-4 text-gray-500">
+                        Tidak ada riwayat izin
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort by request date (newest first) and take most recent 3
+            const recentPermissions = permissions
+                .sort((a, b) => new Date(b.RequestDate) - new Date(a.RequestDate))
+                .slice(0, 3);
+                
+            recentPermissions.forEach(permission => {
+                const requestDate = new Date(permission.RequestDate);
+                const formattedDate = requestDate.toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                // Determine status color and icon
+                let statusClass, statusIcon;
+                switch (permission.Status) {
+                    case 'Approved':
+                        statusClass = 'bg-green-100 text-green-800';
+                        statusIcon = 'fa-check-circle';
+                        break;
+                    case 'Rejected':
+                        statusClass = 'bg-red-100 text-red-800';
+                        statusIcon = 'fa-times-circle';
+                        break;
+                    default:
+                        statusClass = 'bg-yellow-100 text-yellow-800';
+                        statusIcon = 'fa-clock';
+                }
+                
+                const item = document.createElement('div');
+                item.className = 'flex items-center p-4 border rounded-lg';
+                item.innerHTML = `
+                    <div class="mr-3 ${statusClass.split(' ')[0]} p-2 rounded-full">
+                        <i class="fas ${statusIcon} ${statusClass.split(' ')[1]}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between">
+                            <p class="text-sm font-medium text-gray-900">${permission.Reason}</p>
+                            <span class="inline-flex px-2 text-xs font-semibold rounded-full ${statusClass}">
+                                ${permission.Status}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${formattedDate} (${permission.LeaveTime} - ${permission.ReturnTime})</p>
+                    </div>
+                `;
+                
+                recentContainer.appendChild(item);
+            });
+        }
+        
+        // Update discipline UI
+        function updateDisciplineUI(disciplineRecords) {
+            const recentContainer = document.getElementById('recentDiscipline');
+            recentContainer.innerHTML = ''; // Clear placeholder/loading state
+            
+            if (disciplineRecords.length === 0) {
+                recentContainer.innerHTML = `
+                    <div class="text-center py-4 text-gray-500">
+                        Tidak ada catatan pelanggaran
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort by date (newest first) and take most recent 3
+            const recentRecords = disciplineRecords
+                .sort((a, b) => new Date(b.Date) - new Date(a.Date))
+                .slice(0, 3);
+                
+            recentRecords.forEach(record => {
+                const recordDate = new Date(record.Date);
+                const formattedDate = recordDate.toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                const item = document.createElement('div');
+                item.className = 'flex items-center p-4 border rounded-lg';
+                item.innerHTML = `
+                    <div class="mr-3 bg-red-100 p-2 rounded-full">
+                        <i class="fas fa-exclamation-circle text-red-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between">
+                            <p class="text-sm font-medium text-gray-900">${record.ViolationType}</p>
+                            <span class="inline-flex px-2 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                ${record.Points} poin
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${formattedDate} - ${record.TeacherName || 'Guru'}</p>
+                    </div>
+                `;
+                
+                recentContainer.appendChild(item);
+            });
+        }
+        
+        // Submit permission request
+        function submitPermission(e) {
+            e.preventDefault();
+            
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+            const submitBtn = document.getElementById('submitPermission');
+            const spinner = document.getElementById('loadingSpinner');
+            
+            // Get form values
+            const leaveDate = document.getElementById('leaveDate').value;
+            const leaveTime = document.getElementById('leaveTime').value;
+            const returnTime = document.getElementById('returnTime').value;
+            const reason = document.getElementById('reason').value;
+            const notes = document.getElementById('notes').value;
+            
+            // Validate form
+            if (!leaveDate || !leaveTime || !returnTime || !reason) {
+                alert('Mohon lengkapi semua field yang diperlukan.');
+                return;
+            }
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            spinner.classList.remove('hidden');
+            
+            // Create form data
+            const formData = new URLSearchParams();
+            formData.append('action', 'requestPermission');
+            formData.append('username', user.username);
+            formData.append('password', 'token-would-be-better');
+            formData.append('role', 'student');
+            formData.append('studentId', user.id);
+            formData.append('leaveDate', leaveDate);
+            formData.append('leaveTime', leaveTime);
+            formData.append('returnTime', returnTime);
+            formData.append('reason', reason);
+            formData.append('notes', notes);
+            
+            // Send request
+            const apiUrl = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec';
+            
+            fetch(apiUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading state
+                submitBtn.disabled = false;
+                spinner.classList.add('hidden');
+                
+                if (data.status === 'success') {
+                    alert('Permintaan izin berhasil diajukan.');
+                    
+                    // Reset form
+                    document.getElementById('leaveDate').value = '';
+                    document.getElementById('leaveTime').value = '';
+                    document.getElementById('returnTime').value = '';
+                    document.getElementById('reason').value = '';
+                    document.getElementById('notes').value = '';
+                    
+                    // Refresh data
+                    fetchStudentProfile(user);
+                } else {
+                    alert('Gagal mengajukan izin: ' + data.message);
+                }
+            })
+            .catch(error => {
+                // Hide loading state
+                submitBtn.disabled = false;
+                spinner.classList.add('hidden');
+                
+                console.error('Error submitting permission:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+            });
+        }
+    </script>
+</body>
+</html> 
