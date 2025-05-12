@@ -75,6 +75,9 @@ function handleRequest(e) {
       case "deleteStudent":
         return deleteStudent(e);
         
+      case "getClasses":
+        return getClasses(e);
+        
       case "getPermissions":
         return getPermissions(e);
         
@@ -108,6 +111,19 @@ function handleRequest(e) {
         
       case "getStudentDiscipline":
         return getStudentDiscipline(e);
+        
+      // Late arrivals handling
+      case "getLateRecords":
+        return getLateRecords(e);
+        
+      case "addLateRecord":
+        return addLateRecord(e);
+        
+      case "updateLateRecord":
+        return updateLateRecord(e);
+        
+      case "deleteLateRecord":
+        return deleteLateRecord(e);
         
       default:
         return createResponse("error", "Unknown action", null);
@@ -1051,6 +1067,208 @@ function getStudentDiscipline(e) {
 }
 
 /**
+ * Gets late records (attendance with "Late" status)
+ */
+function getLateRecords(e) {
+  const date = e.parameter.date || null;
+  
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = spreadsheet.getSheetByName(SHEET_NAMES.ATTENDANCE);
+    const data = sheet.getDataRange().getValues();
+    
+    const headers = data[0];
+    let lateRecords = [];
+    
+    // Skip header row
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][4] === "Late") { // Status column index is 4
+        const recordDate = data[i][2]; // Date column index is 2
+        
+        // Filter by date if provided
+        if (date) {
+          const recordDateStr = Utilities.formatDate(recordDate, SpreadsheetApp.getActive().getSpreadsheetTimeZone(), "yyyy-MM-dd");
+          if (recordDateStr !== date) {
+            continue;
+          }
+        }
+        
+        const record = {};
+        for (let j = 0; j < headers.length; j++) {
+          record[headers[j]] = data[i][j];
+        }
+        lateRecords.push(record);
+      }
+    }
+    
+    return createResponse("success", "Late records retrieved successfully", lateRecords);
+  } catch (error) {
+    return createResponse("error", "Failed to retrieve late records: " + error, null);
+  }
+}
+
+/**
+ * Adds a new late record
+ */
+function addLateRecord(e) {
+  const studentId = e.parameter.studentId;
+  const date = e.parameter.date ? new Date(e.parameter.date) : new Date();
+  const timeIn = e.parameter.timeIn || "";
+  const lateMinutes = e.parameter.lateMinutes || 0;
+  const notes = e.parameter.notes || "";
+  const addDiscipline = e.parameter.addDiscipline === "true";
+  const teacherId = e.parameter.teacherId;
+  
+  if (!studentId) {
+    return createResponse("error", "Student ID is required", null);
+  }
+  
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const attendanceSheet = spreadsheet.getSheetByName(SHEET_NAMES.ATTENDANCE);
+    
+    // Generate a new record ID
+    const recordId = "A" + new Date().getTime().toString().slice(-8);
+    
+    // Add new attendance record with Late status
+    attendanceSheet.appendRow([
+      recordId,
+      studentId,
+      date,
+      timeIn,
+      "Late", // Status
+      lateMinutes,
+      notes
+    ]);
+    
+    // Add discipline points for lateness if requested
+    if (addDiscipline && teacherId) {
+      const violationsSheet = spreadsheet.getSheetByName(SHEET_NAMES.VIOLATIONS);
+      const violationsData = violationsSheet.getDataRange().getValues();
+      
+      // Find the "Late to School" violation type
+      let violationType = null;
+      let points = 2; // Default points if violation type not found
+      
+      for (let i = 1; i < violationsData.length; i++) {
+        if (violationsData[i][1] === "Late to School") {
+          violationType = violationsData[i][0];
+          points = violationsData[i][2];
+          break;
+        }
+      }
+      
+      if (violationType) {
+        const disciplineSheet = spreadsheet.getSheetByName(SHEET_NAMES.DISCIPLINE);
+        
+        // Generate a new discipline record ID
+        const disciplineRecordId = "D" + new Date().getTime().toString().slice(-8);
+        
+        // Add discipline record
+        disciplineSheet.appendRow([
+          disciplineRecordId,
+          studentId,
+          date,
+          violationType,
+          points,
+          "Keterlambatan " + lateMinutes + " menit",
+          teacherId,
+          notes
+        ]);
+      }
+    }
+    
+    return createResponse("success", "Late record added successfully", { recordId });
+  } catch (error) {
+    return createResponse("error", "Failed to add late record: " + error, null);
+  }
+}
+
+/**
+ * Updates an existing late record
+ */
+function updateLateRecord(e) {
+  const recordId = e.parameter.recordId;
+  const studentId = e.parameter.studentId;
+  const date = e.parameter.date ? new Date(e.parameter.date) : null;
+  const timeIn = e.parameter.timeIn;
+  const lateMinutes = e.parameter.lateMinutes;
+  const notes = e.parameter.notes;
+  
+  if (!recordId || !studentId) {
+    return createResponse("error", "Record ID and Student ID are required", null);
+  }
+  
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = spreadsheet.getSheetByName(SHEET_NAMES.ATTENDANCE);
+    const data = sheet.getDataRange().getValues();
+    
+    let rowIndex = -1;
+    
+    // Find the record
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === recordId) {
+        rowIndex = i + 1; // +1 because sheet rows are 1-indexed
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      return createResponse("error", "Late record not found", null);
+    }
+    
+    // Update the record
+    if (date) sheet.getRange(rowIndex, 3).setValue(date);
+    if (timeIn) sheet.getRange(rowIndex, 4).setValue(timeIn);
+    if (lateMinutes) sheet.getRange(rowIndex, 6).setValue(lateMinutes);
+    if (notes !== undefined) sheet.getRange(rowIndex, 7).setValue(notes);
+    
+    return createResponse("success", "Late record updated successfully", null);
+  } catch (error) {
+    return createResponse("error", "Failed to update late record: " + error, null);
+  }
+}
+
+/**
+ * Deletes a late record
+ */
+function deleteLateRecord(e) {
+  const recordId = e.parameter.recordId;
+  
+  if (!recordId) {
+    return createResponse("error", "Record ID is required", null);
+  }
+  
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = spreadsheet.getSheetByName(SHEET_NAMES.ATTENDANCE);
+    const data = sheet.getDataRange().getValues();
+    
+    let rowIndex = -1;
+    
+    // Find the record
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === recordId) {
+        rowIndex = i + 1; // +1 because sheet rows are 1-indexed
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      return createResponse("error", "Late record not found", null);
+    }
+    
+    // Delete the row
+    sheet.deleteRow(rowIndex);
+    
+    return createResponse("success", "Late record deleted successfully", null);
+  } catch (error) {
+    return createResponse("error", "Failed to delete late record: " + error, null);
+  }
+}
+
+/**
  * Test function to diagnose student login issues
  * Run this function directly from the Google Apps Script editor
  */
@@ -1203,4 +1421,31 @@ function addTestStudent() {
   Logger.log("Password: test123");
   
   return true;
+}
+
+/**
+ * Gets classes
+ */
+function getClasses(e) {
+  try {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = spreadsheet.getSheetByName(SHEET_NAMES.CLASSES);
+    const data = sheet.getDataRange().getValues();
+    
+    const headers = data[0];
+    const classes = [];
+    
+    // Skip header row
+    for (let i = 1; i < data.length; i++) {
+      const classObj = {};
+      for (let j = 0; j < headers.length; j++) {
+        classObj[headers[j]] = data[i][j];
+      }
+      classes.push(classObj);
+    }
+    
+    return createResponse("success", "Classes retrieved successfully", classes);
+  } catch (error) {
+    return createResponse("error", "Failed to retrieve classes: " + error, null);
+  }
 } 

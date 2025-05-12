@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolGate - Keterlambatan Siswa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/services.js"></script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Sidebar active state */
+        .sidebar-item.active {
+            background-color: #EBF5FF;
+            color: #1E40AF;
+            border-left: 3px solid #1E40AF;
+        }
+        
+        /* Mobile sidebar */
+        @media (max-width: 768px) {
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            #sidebar.open {
+                transform: translateX(0);
+            }
+            
+            #overlay {
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease, visibility 0.3s ease;
+            }
+            
+            #overlay.open {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Black overlay for mobile sidebar -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white shadow-md z-30 md:translate-x-0 transition-transform">
+        <!-- Logo -->
+        <div class="flex items-center p-4 border-b border-gray-200">
+            <div class="bg-blue-600 text-white p-2 rounded-lg">
+                <i class="fas fa-school text-xl"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800 ml-3">SchoolGate</h1>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="p-4">
+            <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-3">Menu</h2>
+            <ul id="teacher-menu">
+                <li class="mb-1">
+                    <a href="dashboardguru.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-tachometer-alt w-5 text-center mr-2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="perizinan.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-sign-out-alt w-5 text-center mr-2"></i>
+                        <span>Perizinan</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="poin-pelanggaran.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-exclamation-circle w-5 text-center mr-2"></i>
+                        <span>Poin Pelanggaran</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-user-graduate w-5 text-center mr-2"></i>
+                        <span>Siswa</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="keterlambatan.html" class="sidebar-item active flex items-center py-2 px-3 rounded-lg transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-clock w-5 text-center mr-2"></i>
+                        <span>Keterlambatan</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mt-6 mb-3">Pengaturan</h2>
+            <ul>
+                <li class="mb-1">
+                    <a href="profile.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-user-circle w-5 text-center mr-2"></i>
+                        <span>Profil</span>
+                    </a>
+                </li>
+                <li class="mb-1">
+                    <a href="#" id="logoutBtn" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-sign-out-alt w-5 text-center mr-2"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="md:ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm p-4 flex justify-between items-center sticky top-0 z-10">
+            <div class="flex items-center">
+                <button id="menuToggle" class="mr-4 text-gray-600 md:hidden">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-xl font-semibold text-gray-800">Manajemen Keterlambatan Siswa</h1>
+            </div>
+            
+            <div class="flex items-center">
+                <div id="user-info" class="flex items-center">
+                    <div id="user-avatar" class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                        <!-- User initials will be inserted here by JS -->
+                    </div>
+                    <span id="user-name" class="hidden md:block text-sm text-gray-700 ml-2">Admin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main content area -->
+        <div class="p-6">
+            <!-- Filter and action buttons -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="flex-grow max-w-md">
+                        <div class="relative">
+                            <input type="text" id="search-input" placeholder="Cari siswa..." class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <input type="date" id="date-filter" class="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="btn-add-late" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
+                            <i class="fas fa-plus mr-2"></i> Catat Keterlambatan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Late arrivals table -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Masuk</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterlambatan (menit)</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="late-records-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Table content will be inserted here by JS -->
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                    <div class="flex justify-center items-center">
+                                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Memuat data...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty state -->
+                <div id="no-data-message" class="hidden py-8 text-center">
+                    <div class="text-gray-400 mb-2">
+                        <i class="fas fa-clock text-4xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-600">Tidak ada data keterlambatan</h3>
+                    <p class="text-gray-500 text-sm">Belum ada data keterlambatan yang tersedia</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Late Record Modal -->
+    <div id="late-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-xl font-bold">Catat Keterlambatan</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="late-form">
+                <input type="hidden" id="record-id">
+                <div class="mb-4">
+                    <label for="student-select" class="block text-gray-700 mb-2">Siswa</label>
+                    <select id="student-select" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Pilih Siswa</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="late-date" class="block text-gray-700 mb-2">Tanggal</label>
+                        <input type="date" id="late-date" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="late-time" class="block text-gray-700 mb-2">Waktu Masuk</label>
+                        <input type="time" id="late-time" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="late-minutes" class="block text-gray-700 mb-2">Keterlambatan (menit)</label>
+                        <input type="number" id="late-minutes" min="1" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="add-discipline" class="block text-gray-700 mb-2">Tambah Poin Pelanggaran</label>
+                        <div class="flex items-center mt-2">
+                            <input type="checkbox" id="add-discipline" class="mr-2">
+                            <label for="add-discipline">Tambahkan poin pelanggaran</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="notes" class="block text-gray-700 mb-2">Catatan</label>
+                    <textarea id="notes" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Catatan tambahan..."></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="btn-cancel" class="px-4 py-2 text-gray-600 mr-2">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuToggle = document.getElementById('menuToggle');
+        const lateRecordsTable = document.getElementById('late-records-table');
+        const noDataMessage = document.getElementById('no-data-message');
+        const searchInput = document.getElementById('search-input');
+        const dateFilter = document.getElementById('date-filter');
+        const btnAddLate = document.getElementById('btn-add-late');
+        const lateModal = document.getElementById('late-modal');
+        const lateForm = document.getElementById('late-form');
+        const closeModal = document.getElementById('close-modal');
+        const btnCancel = document.getElementById('btn-cancel');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        // Global variables
+        let currentUserData = null;
+        let lateRecordsData = [];
+        let studentsData = [];
+        let selectedRecordId = null;
+        let violationTypes = [];
+        
+        // Initialize the date filter to today's date
+        if (dateFilter) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            dateFilter.value = `${yyyy}-${mm}-${dd}`;
+        }
+        
+        // Toggle sidebar on mobile
+        if (menuToggle) {
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            });
+        }
+        
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('open');
+            });
+        }
+        
+        // Logout functionality
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                AuthService.logout();
+            });
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check authentication
+            try {
+                if (!AuthService.isLoggedIn()) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                currentUserData = AuthService.getCurrentUser();
+                
+                // Display user information
+                const userNameElement = document.getElementById('user-name');
+                const userAvatarElement = document.getElementById('user-avatar');
+                
+                if (userNameElement) {
+                    userNameElement.textContent = currentUserData.name || currentUserData.username || 'Pengguna';
+                }
+                
+                if (userAvatarElement) {
+                    userAvatarElement.textContent = getInitials(currentUserData.name || currentUserData.username);
+                }
+                
+                // Check if user is teacher (only teachers can access this page)
+                if (currentUserData.role !== 'teacher') {
+                    window.location.href = 'dashboard-siswa.html';
+                    return;
+                }
+                
+                // Load students data for select options
+                await loadStudents();
+                
+                // Load violation types for discipline points
+                await loadViolationTypes();
+                
+                // Load late records
+                await loadLateRecords();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showToast('Terjadi kesalahan saat memuat halaman', 'error');
+            }
+        });
+        
+        // Get initials from name
+        function getInitials(name) {
+            if (!name) return 'U';
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'success', duration = 3000) {
+            // Check if toast container exists
+            let toastContainer = document.getElementById('toast-container');
+            
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.className = 'fixed bottom-4 right-4 z-50';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Create toast
+            const toast = document.createElement('div');
+            toast.className = `mb-3 p-4 rounded-lg shadow-lg flex items-center text-white ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Remove toast after duration
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, duration);
+        }
+        
+        // Load students data
+        async function loadStudents() {
+            try {
+                studentsData = await TeacherService.getStudents();
+                
+                // Populate student select dropdown
+                const studentSelect = document.getElementById('student-select');
+                if (studentSelect) {
+                    studentSelect.innerHTML = '<option value="">Pilih Siswa</option>';
+                    
+                    studentsData.forEach(student => {
+                        const option = document.createElement('option');
+                        const studentId = student.StudentID || student.studentID || student.id;
+                        const fullName = student.FullName || student.fullName || student.Name || student.name;
+                        const className = student.Class || student.class || student.ClassName || student.className;
+                        
+                        option.value = studentId;
+                        option.textContent = `${fullName} (${className})`;
+                        studentSelect.appendChild(option);
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error loading students:', error);
+                showToast('Terjadi kesalahan saat memuat data siswa', 'error');
+            }
+        }
+        
+        // Load violation types
+        async function loadViolationTypes() {
+            try {
+                violationTypes = await TeacherService.getViolationTypes();
+            } catch (error) {
+                console.error('Error loading violation types:', error);
+                showToast('Terjadi kesalahan saat memuat jenis pelanggaran', 'error');
+            }
+        }
+        
+        // Load late records
+        async function loadLateRecords() {
+            if (!lateRecordsTable) return;
+            
+            lateRecordsTable.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                        <div class="flex justify-center items-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Memuat data...</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            try {
+                // Get filter date if available
+                const filterDate = dateFilter ? dateFilter.value : '';
+                
+                // Call API to get late records
+                lateRecordsData = await TeacherService.getLateRecords(filterDate);
+                renderLateRecordsTable(lateRecordsData);
+                
+            } catch (error) {
+                console.error('Error loading late records:', error);
+                showToast('Terjadi kesalahan saat memuat data keterlambatan', 'error');
+                
+                lateRecordsTable.innerHTML = '';
+                if (noDataMessage) {
+                    noDataMessage.classList.remove('hidden');
+                }
+            }
+        }
+        
+        // Render late records table
+        function renderLateRecordsTable(data) {
+            if (!lateRecordsTable) return;
+            
+            if (!data || data.length === 0) {
+                lateRecordsTable.innerHTML = '';
+                if (noDataMessage) {
+                    noDataMessage.classList.remove('hidden');
+                }
+                return;
+            }
+            
+            if (noDataMessage) {
+                noDataMessage.classList.add('hidden');
+            }
+            
+            lateRecordsTable.innerHTML = '';
+            
+            data.forEach(record => {
+                const row = document.createElement('tr');
+                
+                // Format date and time
+                const recordDate = record.Date instanceof Date 
+                    ? record.Date
+                    : new Date(record.Date);
+                    
+                const formattedDate = recordDate.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                
+                const timeIn = record.TimeIn || '-';
+                
+                // Find student name based on ID
+                const student = studentsData.find(s => 
+                    (s.StudentID || s.studentID) === record.StudentID
+                );
+                
+                const studentName = student 
+                    ? (student.FullName || student.fullName || student.Name || student.name) 
+                    : 'Unknown';
+                    
+                const className = student
+                    ? (student.Class || student.class || student.ClassName || student.className)
+                    : '-';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${record.RecordID}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">${studentName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${className}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${formattedDate}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${timeIn}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${
+                            Number(record.LateMinutes) > 15 
+                                ? 'text-red-600 bg-red-100' 
+                                : 'text-yellow-600 bg-yellow-100'
+                        }">
+                            ${record.LateMinutes} menit
+                        </span>
+                    </td>
+                `;
+                
+                // Add action buttons
+                const actionsCell = document.createElement('td');
+                actionsCell.className = 'px-6 py-4 whitespace-nowrap text-right text-sm font-medium';
+                
+                const editButton = document.createElement('button');
+                editButton.className = 'text-indigo-600 hover:text-indigo-900 mr-3';
+                editButton.innerHTML = '<i class="fas fa-edit"></i>';
+                editButton.addEventListener('click', () => openEditModal(record));
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'text-red-600 hover:text-red-900';
+                deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteButton.addEventListener('click', () => deleteRecord(record.RecordID));
+                
+                actionsCell.appendChild(editButton);
+                actionsCell.appendChild(deleteButton);
+                row.appendChild(actionsCell);
+                
+                lateRecordsTable.appendChild(row);
+            });
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            if (btnAddLate) {
+                btnAddLate.addEventListener('click', openAddModal);
+            }
+            
+            if (closeModal) {
+                closeModal.addEventListener('click', closeLateModal);
+            }
+            
+            if (btnCancel) {
+                btnCancel.addEventListener('click', closeLateModal);
+            }
+            
+            if (lateForm) {
+                lateForm.addEventListener('submit', saveLateRecord);
+            }
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', filterRecords);
+            }
+            
+            if (dateFilter) {
+                dateFilter.addEventListener('change', loadLateRecords);
+            }
+        }
+        
+        // Filter records
+        function filterRecords() {
+            if (!searchInput || !lateRecordsData) return;
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            if (!searchTerm) {
+                renderLateRecordsTable(lateRecordsData);
+                return;
+            }
+            
+            const filtered = lateRecordsData.filter(record => {
+                const student = studentsData.find(s => 
+                    (s.StudentID || s.studentID) === record.StudentID
+                );
+                
+                const studentName = student 
+                    ? (student.FullName || student.fullName || student.Name || student.name).toLowerCase() 
+                    : '';
+                    
+                return studentName.includes(searchTerm) || 
+                       record.RecordID.toLowerCase().includes(searchTerm);
+            });
+            
+            renderLateRecordsTable(filtered);
+        }
+        
+        // Open add modal
+        function openAddModal() {
+            const modalTitle = document.getElementById('modal-title');
+            const recordId = document.getElementById('record-id');
+            const studentSelect = document.getElementById('student-select');
+            const lateDate = document.getElementById('late-date');
+            const lateTime = document.getElementById('late-time');
+            const lateMinutes = document.getElementById('late-minutes');
+            const notes = document.getElementById('notes');
+            const addDiscipline = document.getElementById('add-discipline');
+            
+            if (modalTitle) modalTitle.textContent = 'Catat Keterlambatan';
+            if (recordId) recordId.value = '';
+            if (studentSelect) studentSelect.value = '';
+            
+            // Set today's date
+            if (lateDate) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                lateDate.value = `${yyyy}-${mm}-${dd}`;
+            }
+            
+            // Set current time
+            if (lateTime) {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                lateTime.value = `${hours}:${minutes}`;
+            }
+            
+            if (lateMinutes) lateMinutes.value = '';
+            if (notes) notes.value = '';
+            if (addDiscipline) addDiscipline.checked = true;
+            
+            if (lateModal) {
+                lateModal.classList.remove('hidden');
+            }
+        }
+        
+        // Open edit modal
+        function openEditModal(record) {
+            const modalTitle = document.getElementById('modal-title');
+            const recordId = document.getElementById('record-id');
+            const studentSelect = document.getElementById('student-select');
+            const lateDate = document.getElementById('late-date');
+            const lateTime = document.getElementById('late-time');
+            const lateMinutes = document.getElementById('late-minutes');
+            const notes = document.getElementById('notes');
+            const addDiscipline = document.getElementById('add-discipline');
+            
+            if (modalTitle) modalTitle.textContent = 'Edit Keterlambatan';
+            if (recordId) recordId.value = record.RecordID;
+            if (studentSelect) studentSelect.value = record.StudentID;
+            
+            // Format date for input
+            if (lateDate) {
+                const date = record.Date instanceof Date 
+                    ? record.Date 
+                    : new Date(record.Date);
+                    
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                lateDate.value = `${yyyy}-${mm}-${dd}`;
+            }
+            
+            if (lateTime) lateTime.value = record.TimeIn || '';
+            if (lateMinutes) lateMinutes.value = record.LateMinutes || '';
+            if (notes) notes.value = record.Notes || '';
+            
+            // Disable add discipline checkbox for edit (already processed)
+            if (addDiscipline) {
+                addDiscipline.checked = false;
+                addDiscipline.disabled = true;
+            }
+            
+            if (lateModal) {
+                lateModal.classList.remove('hidden');
+            }
+        }
+        
+        // Close modal
+        function closeLateModal() {
+            if (lateModal) {
+                lateModal.classList.add('hidden');
+            }
+            
+            // Reset add discipline checkbox
+            const addDiscipline = document.getElementById('add-discipline');
+            if (addDiscipline) addDiscipline.disabled = false;
+        }
+        
+        // Save late record
+        async function saveLateRecord(event) {
+            event.preventDefault();
+            
+            const recordId = document.getElementById('record-id').value;
+            const studentId = document.getElementById('student-select').value;
+            const lateDate = document.getElementById('late-date').value;
+            const lateTime = document.getElementById('late-time').value;
+            const lateMinutes = document.getElementById('late-minutes').value;
+            const notes = document.getElementById('notes').value;
+            const addDiscipline = document.getElementById('add-discipline').checked;
+            
+            // Validate form
+            if (!studentId || !lateDate || !lateTime || !lateMinutes) {
+                showToast('Harap isi semua field yang diperlukan', 'error');
+                return;
+            }
+            
+            try {
+                // Format date
+                const date = new Date(lateDate);
+                
+                const recordData = {
+                    studentId,
+                    date: date.toISOString().split('T')[0],
+                    timeIn: lateTime,
+                    lateMinutes: Number(lateMinutes),
+                    notes
+                };
+                
+                if (recordId) {
+                    // Update record
+                    recordData.recordId = recordId;
+                    await TeacherService.updateLateRecord(recordData);
+                    showToast('Data keterlambatan berhasil diperbarui', 'success');
+                } else {
+                    // Add new record
+                    recordData.addDiscipline = addDiscipline;
+                    await TeacherService.addLateRecord(recordData);
+                    showToast('Data keterlambatan berhasil ditambahkan', 'success');
+                }
+                
+                closeLateModal();
+                await loadLateRecords();
+                
+            } catch (error) {
+                console.error('Error saving late record:', error);
+                showToast('Terjadi kesalahan saat menyimpan data', 'error');
+            }
+        }
+        
+        // Delete record
+        async function deleteRecord(recordId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus data keterlambatan ini?')) {
+                return;
+            }
+            
+            try {
+                await TeacherService.deleteLateRecord(recordId);
+                showToast('Data keterlambatan berhasil dihapus', 'success');
+                await loadLateRecords();
+            } catch (error) {
+                console.error('Error deleting late record:', error);
+                showToast('Terjadi kesalahan saat menghapus data', 'error');
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -85,6 +85,12 @@
                     </a>
                 </li>
                 <li class="mb-1">
+                    <a href="keterlambatan-siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-clock w-5 text-center mr-2"></i>
+                        <span>Keterlambatan</span>
+                    </a>
+                </li>
+                <li class="mb-1">
                     <a href="poin-siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
                         <i class="fas fa-exclamation-circle w-5 text-center mr-2"></i>
                         <span>Poin Pelanggaran</span>
@@ -313,6 +319,68 @@
         </div>
     </div>
 
+    <!-- Mobile Menu (Shown on small screens) -->
+    <div id="mobile-menu" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden">
+        <div class="bg-white text-gray-700 w-64 h-full shadow-md">
+            <div class="p-4 flex justify-between items-center border-b border-gray-200">
+                <div class="flex items-center">
+                    <div class="bg-blue-600 text-white p-2 rounded-lg">
+                        <i class="fas fa-school text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-800 ml-3">SchoolGate</h1>
+                </div>
+                <button id="close-mobile-menu" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <nav class="mt-5 px-4">
+                <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-3">Menu</h2>
+                <ul>
+                    <li class="mb-1">
+                        <a href="dashboard-siswa.html" class="sidebar-item active flex items-center py-2 px-3 rounded-lg transition-colors text-sm font-medium pl-3">
+                            <i class="fas fa-tachometer-alt w-5 text-center mr-2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="izin-siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                            <i class="fas fa-sign-out-alt w-5 text-center mr-2"></i>
+                            <span>Pengajuan Izin</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="keterlambatan-siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                            <i class="fas fa-clock w-5 text-center mr-2"></i>
+                            <span>Keterlambatan</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="poin-siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                            <i class="fas fa-exclamation-circle w-5 text-center mr-2"></i>
+                            <span>Poin Pelanggaran</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <h2 class="text-xs uppercase text-gray-500 font-semibold tracking-wider mt-6 mb-3">Pengaturan</h2>
+                <ul>
+                    <li class="mb-1">
+                        <a href="profile-siswa.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                            <i class="fas fa-user-circle w-5 text-center mr-2"></i>
+                            <span>Profil</span>
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="#" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-sm font-medium pl-3 logout-trigger">
+                            <i class="fas fa-sign-out-alt w-5 text-center mr-2"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
     <script src="js/services.js"></script>
     <script>
         // DOM Elements
@@ -324,16 +392,24 @@
         const logoutBtn = document.getElementById('logoutBtn');
         const logoutTriggers = document.querySelectorAll('.logout-trigger');
         const welcomeMessage = document.getElementById('welcomeMessage');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const closeMobileMenu = document.getElementById('close-mobile-menu');
         
-        // Toggle sidebar on mobile
+        // Toggle mobile menu
         menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('open');
+            mobileMenu.classList.remove('hidden');
         });
         
+        // Close mobile menu
+        closeMobileMenu.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+        });
+        
+        // Toggle sidebar on mobile
         overlay.addEventListener('click', () => {
             sidebar.classList.remove('open');
             overlay.classList.remove('open');
+            mobileMenu.classList.add('hidden');
         });
         
         // Toggle profile dropdown

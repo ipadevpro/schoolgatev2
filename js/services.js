@@ -4,7 +4,7 @@
  */
 
 // Base API URL - change this to your Google Apps Script web app URL
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzLpE9St8QIWtIJKQTpGUqWHO3p_8m-jTRVRiTniz5KhMXcEZ3YOOF7z_g2L3RpwOPZVQ/exec';
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbwNRCQrfpFmMhuM9NpyQRdBX0sI7FjuVNfAz_elzNZkBnXBYWBWnkwWqBtuvCNQHBIQuw/exec';
 
 // Authentication utilities
 const AuthService = {
@@ -243,6 +243,32 @@ const TeacherService = {
     },
     
     /**
+     * Get all classes
+     */
+    async getClasses() {
+        const credentials = AuthService.getCredentials();
+        
+        if (!AuthService.hasRole('teacher')) {
+            throw new Error('Unauthorized access');
+        }
+        
+        const params = new URLSearchParams();
+        params.append('action', 'getClasses');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
+        params.append('role', 'teacher');
+        
+        const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
+        const data = await response.json();
+        
+        if (data.status !== 'success') {
+            throw new Error(data.message || 'Failed to fetch classes');
+        }
+        
+        return data.data;
+    },
+    
+    /**
      * Get all permissions
      */
     async getPermissions() {
@@ -420,6 +446,138 @@ const TeacherService = {
         
         if (data.status !== 'success') {
             throw new Error(data.message || 'Failed to fetch discipline points');
+        }
+        
+        return data.data;
+    },
+    
+    /**
+     * Get all late records (attendance with "Late" status)
+     */
+    async getLateRecords(date = null) {
+        const credentials = AuthService.getCredentials();
+        
+        if (!AuthService.hasRole('teacher')) {
+            throw new Error('Unauthorized access');
+        }
+        
+        const params = new URLSearchParams();
+        params.append('action', 'getLateRecords');
+        params.append('username', credentials.username);
+        params.append('password', credentials.password);
+        params.append('role', 'teacher');
+        
+        if (date) {
+            params.append('date', date);
+        }
+        
+        const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
+        const data = await response.json();
+        
+        if (data.status !== 'success') {
+            throw new Error(data.message || 'Failed to fetch late records');
+        }
+        
+        return data.data;
+    },
+    
+    /**
+     * Add a new late record
+     */
+    async addLateRecord(recordData) {
+        const credentials = AuthService.getCredentials();
+        
+        if (!AuthService.hasRole('teacher')) {
+            throw new Error('Unauthorized access');
+        }
+        
+        const formData = new URLSearchParams();
+        formData.append('action', 'addLateRecord');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
+        formData.append('role', 'teacher');
+        formData.append('teacherId', credentials.id);
+        
+        // Add record data
+        Object.keys(recordData).forEach(key => {
+            formData.append(key, recordData[key]);
+        });
+        
+        const response = await fetch(API_BASE_URL, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.status !== 'success') {
+            throw new Error(data.message || 'Failed to add late record');
+        }
+        
+        return data.data;
+    },
+    
+    /**
+     * Update a late record
+     */
+    async updateLateRecord(recordData) {
+        const credentials = AuthService.getCredentials();
+        
+        if (!AuthService.hasRole('teacher')) {
+            throw new Error('Unauthorized access');
+        }
+        
+        const formData = new URLSearchParams();
+        formData.append('action', 'updateLateRecord');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
+        formData.append('role', 'teacher');
+        
+        // Add record data
+        Object.keys(recordData).forEach(key => {
+            formData.append(key, recordData[key]);
+        });
+        
+        const response = await fetch(API_BASE_URL, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.status !== 'success') {
+            throw new Error(data.message || 'Failed to update late record');
+        }
+        
+        return data.data;
+    },
+    
+    /**
+     * Delete a late record
+     */
+    async deleteLateRecord(recordId) {
+        const credentials = AuthService.getCredentials();
+        
+        if (!AuthService.hasRole('teacher')) {
+            throw new Error('Unauthorized access');
+        }
+        
+        const formData = new URLSearchParams();
+        formData.append('action', 'deleteLateRecord');
+        formData.append('username', credentials.username);
+        formData.append('password', credentials.password);
+        formData.append('role', 'teacher');
+        formData.append('recordId', recordId);
+        
+        const response = await fetch(API_BASE_URL, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.status !== 'success') {
+            throw new Error(data.message || 'Failed to delete late record');
         }
         
         return data.data;

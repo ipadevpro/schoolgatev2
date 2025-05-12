@@ -86,6 +86,12 @@
                     </a>
                 </li>
                 <li class="mb-1">
+                    <a href="keterlambatan.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
+                        <i class="fas fa-clock w-5 text-center mr-2"></i>
+                        <span>Keterlambatan</span>
+                    </a>
+                </li>
+                <li class="mb-1">
                     <a href="poin-pelanggaran.html" class="sidebar-item flex items-center py-2 px-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium pl-3">
                         <i class="fas fa-exclamation-circle w-5 text-center mr-2"></i>
                         <span>Poin Pelanggaran</span>
@@ -408,6 +414,9 @@
                 <a href="perizinan.html" class="block py-3 px-6 hover:bg-blue-700">
                     <i class="fas fa-clipboard-list mr-2"></i> Perizinan
                 </a>
+                <a href="keterlambatan.html" class="block py-3 px-6 hover:bg-blue-700">
+                    <i class="fas fa-clock mr-2"></i> Keterlambatan
+                </a>
                 <a href="poin-pelanggaran.html" class="block py-3 px-6 hover:bg-blue-700">
                     <i class="fas fa-exclamation-triangle mr-2"></i> Poin Pelanggaran
                 </a>
@@ -526,38 +535,41 @@
         // Load classes
         async function loadClasses() {
             try {
-                // We assume there's a getClasses method in the TeacherService
-                // If not available, this would need to be added to the service
+                // Try to get classes from the API
                 classesData = await TeacherService.getClasses();
-                
-                // Populate class dropdown for filtering
-                if (classFilter) {
-                    classesData.forEach(cls => {
-                        const filterOption = document.createElement('option');
-                        filterOption.value = cls.ClassID || cls.classID;
-                        filterOption.textContent = cls.ClassName || cls.className;
-                        classFilter.appendChild(filterOption);
-                    });
-                }
-                
-                // Populate class select for add/edit form
-                const classSelect = document.getElementById('class-select');
-                if (classSelect) {
-                    classesData.forEach(cls => {
-                        const option = document.createElement('option');
-                        option.value = cls.ClassID || cls.classID;
-                        option.textContent = cls.ClassName || cls.className;
-                        classSelect.appendChild(option);
-                    });
-                }
-                
-                // Update total classes counter
-                document.getElementById('total-classes').textContent = classesData.length;
-                
             } catch (error) {
                 console.error('Error loading classes:', error);
-                Utils.showToast('Terjadi kesalahan saat memuat data kelas', 'error');
+                // If API call fails, initialize with empty array instead of showing error
+                classesData = [];
+                document.getElementById('total-classes').textContent = '0';
+                return; // Exit early if API call fails
             }
+            
+            // Populate class dropdown for filtering
+            if (classFilter) {
+                classFilter.innerHTML = '<option value="">Semua Kelas</option>'; // Reset dropdown
+                classesData.forEach(cls => {
+                    const filterOption = document.createElement('option');
+                    filterOption.value = cls.ClassID || cls.classID;
+                    filterOption.textContent = cls.ClassName || cls.className;
+                    classFilter.appendChild(filterOption);
+                });
+            }
+            
+            // Populate class select for add/edit form
+            const classSelect = document.getElementById('class-select');
+            if (classSelect) {
+                classSelect.innerHTML = '<option value="">Pilih Kelas</option>'; // Reset dropdown
+                classesData.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.ClassID || cls.classID;
+                    option.textContent = cls.ClassName || cls.className;
+                    classSelect.appendChild(option);
+                });
+            }
+            
+            // Update total classes counter
+            document.getElementById('total-classes').textContent = classesData.length;
         }
 
         // Load students data
